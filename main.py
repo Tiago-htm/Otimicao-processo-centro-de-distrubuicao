@@ -1,4 +1,4 @@
-def organiza_pedidos_e_corredores(filename):
+def organizaPedidosCorredores(filename):
     with open(filename, 'r') as f:
         linhas = f.readlines()
     
@@ -16,15 +16,15 @@ def organiza_pedidos_e_corredores(filename):
         for j in capturaItem:
           numeros.append(int(j))
         n = numeros[0]
-        itens = {}
+        items = {}
         k = 1
         while k < len(numeros):
-            item_id = numeros[k]
+            itemId = numeros[k]
             quantidade = numeros[k + 1]
-            itens[item_id] = quantidade
+            items[itemId] = quantidade
             k += 2         
 
-        pedidos[i] = itens
+        pedidos[i] = items
    
     for i in range(quantidadeCorredor):
         capturaItem =  linhas[1 + quantidadePedidos + i].split()
@@ -32,15 +32,15 @@ def organiza_pedidos_e_corredores(filename):
         for j in capturaItem:
             numeros.append(int(j))
         n = numeros[0]
-        itens = {}
+        items = {}
         k = 1
         while k < len(numeros):
-            item_id = numeros[k]
+            itemId = numeros[k]
             quantidade = numeros[k + 1]
-            itens[item_id] = quantidade
+            items[itemId] = quantidade
             k += 2
         
-        corredores[i] = itens
+        corredores[i] = items
 
     ultimaLinha = linhas[-1].split() 
     wave.append(ultimaLinha[0])
@@ -48,6 +48,20 @@ def organiza_pedidos_e_corredores(filename):
 
     return pedidos, corredores, wave
 
+def calcularItemsFrequentes(pedidos):
+    frequencia = {}    
+
+    for pedidoId, items in pedidos.items():
+            for itemId in items:
+               if itemId in frequencia:
+                     frequencia[itemId] += 1
+               else: 
+                    frequencia[itemId] = 1 
+
+    return sorted(frequencia.items(), key=lambda x: x[1], reverse=True)
+    
 
 if __name__ == "__main__":
-    pedidos, corredores, wave = organiza_pedidos_e_corredores("data/instance_0001.txt")
+    pedidos, corredores, wave = organizaPedidosCorredores("data/instance_0001.txt")
+    teste = calcularitemsFrequentes(pedidos)
+    print(teste)
