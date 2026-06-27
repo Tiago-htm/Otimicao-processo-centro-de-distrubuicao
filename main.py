@@ -59,9 +59,75 @@ def calcularItemsFrequentes(pedidos):
                     frequencia[itemId] = 1 
 
     return sorted(frequencia.items(), key=lambda x: x[1], reverse=True)
+
+def calcularMelhorPedido(pedidos, pedidosSelecionados, corredores, corredoresAtivos, maxWave, unidadesAtuais):
+    melhorPedido = None
+    melhorScore = -1 
     
+    for pedidoId, itens in pedidos.items():
+        if pedidoId in pedidosSelecionados:
+            continue
+        
+        unidadesPedido = sum(itens.values())
+        
+        if unidadesAtuais + unidadesPedido > maxWave:
+            continue
+        
+        cobertos = 0
+        novos = 0
+        for itemId in itens:
+            coberto = False
+            for corredorId in corredoresAtivos:
+                if itemId in corredores[corredorId]:
+                    coberto = True
+                    break
+            if coberto:
+                cobertos += 1
+            else:
+                novos += 1
+        
+        score = cobertos - novos
+        
+        if score > melhorScore:
+            melhorScore = score
+            melhorPedido = pedidoId
+    
+    return melhorPedido    
+
+
+# verifico qual os items que tem junto com o melhor item dentro de pedidos
+def calcularDemanda(pedidos, pedidosSelecionados):
+    demanda = {}
+    for pedidoId in pedidosSelecionados:
+        for itemId, qtd in pedidos[pedidoId].items():
+             demanda[itemId] = demanda.get(itemId, 0) + qtd
+    return demanda
+
 
 if __name__ == "__main__":
-    pedidos, corredores, wave = organizaPedidosCorredores("data/instance_0001.txt")
-    teste = calcularitemsFrequentes(pedidos)
-    print(teste)
+    pedidos, corredores, wave= organizaPedidosCorredores("data/instance_0001.txt")    
+    
+    itemsFrequentes = calcularItemsFrequentes(pedidos)
+
+    melhorItem = itemsFrequentes[0][0]
+
+    print(melhorItem)
+
+    melhoresPedidos =  []
+
+    quantidadePedidos = 0
+
+    for pedidoId, items in pedidos.items():  # dentro de pedidos eu busco todos os items
+        if melhorItem in items:      # eu verifico se existe o Item que mais repete no dataset em items
+                melhoresPedidos.append(pedidoId)
+                quantidadePedidos += sum(pedidos[pedidoId].values())
+
+    print(melhoresPedidos) 
+    #[11, 23, 24, 42] os indices começam do 0 :) entao a linha 13 é a correta!!!!!!!!!!!!!!!!!!!!
+    demanda = calcularDemanda(pedidos, melhoresPedidos)
+    print(demanda)
+  
+
+    
+
+    
