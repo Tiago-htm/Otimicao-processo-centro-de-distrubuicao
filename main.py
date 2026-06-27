@@ -13,9 +13,7 @@ def organizaPedidosCorredores(filename):
 
     for i in range(quantidadePedidos):
         capturaItem = linhas[i + 1].split()
-        numeros = []
-        for j in capturaItem:
-            numeros.append(int(j))
+        numeros = [int(j) for j in capturaItem]
         items = {}
         k = 1
         while k < len(numeros):
@@ -25,9 +23,7 @@ def organizaPedidosCorredores(filename):
    
     for i in range(quantidadeCorredor):
         capturaItem = linhas[1 + quantidadePedidos + i].split()
-        numeros = []
-        for j in capturaItem:
-            numeros.append(int(j))
+        numeros = [int(j) for j in capturaItem]
         items = {}
         k = 1
         while k < len(numeros):
@@ -36,17 +32,14 @@ def organizaPedidosCorredores(filename):
         corredores[i] = items
 
     ultimaLinha = linhas[-1].split()
-    return pedidos, corredores, ultimaLinha[0], ultimaLinha[1]
+    return pedidos, corredores, int(ultimaLinha[0]), int(ultimaLinha[1])
 
 
 def calcularItemsFrequentes(pedidos):
     frequencia = {}
     for pedidoId, items in pedidos.items():
         for itemId in items:
-            if itemId in frequencia:
-                frequencia[itemId] += 1
-            else:
-                frequencia[itemId] = 1
+            frequencia[itemId] = frequencia.get(itemId, 0) + 1
     return sorted(frequencia.items(), key=lambda x: x[1], reverse=True)
 
 
@@ -60,10 +53,7 @@ def calcularDemanda(pedidos, pedidosSelecionados):
 
 def verificaEstoqueDisponivel(demanda, corredores):
     for itemId, qtdNecessaria in demanda.items():
-        totalEstoque = 0
-        for corredorId, items in corredores.items():
-            if itemId in items:
-                totalEstoque += items[itemId]
+        totalEstoque = sum(items.get(itemId, 0) for items in corredores.values())
         if totalEstoque < qtdNecessaria:
             return False
     return True
@@ -105,50 +95,15 @@ def setCoverGuloso(demanda, corredores):
     return melhoresCorredores
 
 
-def calcularMelhorPedido(pedidos, pedidosSelecionados, corredores, corredoresAtivos, maxWave, unidadesAtuais):
-    melhorPedido = None
-    melhorScore = -1
-
-    for pedidoId, itens in pedidos.items():
-        if pedidoId in pedidosSelecionados:
-            continue
-        unidadesPedido = sum(itens.values())
-        if unidadesAtuais + unidadesPedido > maxWave:
-            continue
-        cobertos = 0
-        novos = 0
-        for itemId in itens:
-            coberto = False
-            for corredorId in corredoresAtivos:
-                if itemId in corredores[corredorId]:
-                    coberto = True
-                    break
-            if coberto:
-                cobertos += 1
-            else:
-                novos += 1
-        score = cobertos - novos
-        if score > melhorScore:
-            melhorScore = score
-            melhorPedido = pedidoId
-
-    return melhorPedido
-
-
 def verificaCoberturaCompleta(pedidosSelecionados, corredoresSelecionados, pedidos, corredores):
     demanda = calcularDemanda(pedidos, pedidosSelecionados)
     estoque = {}
     for cId in corredoresSelecionados:
         for iId, q in corredores[cId].items():
-            if iId in estoque:
-                estoque[iId] += q
-            else:
-                estoque[iId] = q
+            estoque[iId] = estoque.get(iId, 0) + q
+            
     for iId, q in demanda.items():
-        disponivel = 0
-        if iId in estoque:
-            disponivel = estoque[iId]
-        if disponivel < q:
+        if estoque.get(iId, 0) < q:
             return False
     return True
 
@@ -167,69 +122,87 @@ if __name__ == "__main__":
     for i in range(1, 21):
         nomeArquivo = f"data/instance_{i:04d}.txt"
         if not os.path.exists(nomeArquivo):
+            print(f"Arquivo {nomeArquivo} não encontrado.")
             continue
+            
         nomeSaida = f"saidas/saida_{i:04d}.txt"
         os.makedirs("saidas", exist_ok=True)
 
         pedidos, corredores, waveMin, waveMax = organizaPedidosCorredores(nomeArquivo)
         itemsFrequentes = calcularItemsFrequentes(pedidos)
 
-        melhoresPedidos = []
-        quantidadePedidos = 0
+        solucao_encontrada = False
 
-        for itemFrequente, _ in itemsFrequentes:
+        for semente_atual, _ in itemsFrequentes:
+            melhoresPedidos = []
+            quantidadePedidos = 0
+
             for pedidoId, items in pedidos.items():
-                if itemFrequente in items:
+                if semente_atual in items:
+                    unidadesPedido = sum(items.values())
+                    if quantidadePedidos + unidadesPedido <= waveMax:
+                        novaDemanda = calcularDemanda(pedidos, melhoresPedidos + [pedidoId])
+                        if verificaEstoqueDisponivel(novaDemanda, corredores):
+                            melhoresPedidos.append(pedidoId)
+                            quantidadePedidos += unidadesPedido
+            
+            if not melhoresPedidos:
+                continue 
+
+            demanda = calcularDemanda(pedidos, melhoresPedidos)
+            melhoresCorredores = setCoverGuloso(demanda, corredores)
+            wave = quantidadePedidos
+
+            if len(melhoresCorredores) == 0 or not verificaCoberturaCompleta(melhoresPedidos, melhoresCorredores, pedidos, corredores):
+                continue 
+
+            objetivoAtual = wave / len(melhoresCorredores)
+
+            while wave < waveMax:
+                candidatos = []
+                for pedidoId, itens in pedidos.items():
+                    if pedidoId in melhoresPedidos:
+                        continue
+                    unidadesPedido = sum(itens.values())
+                    if wave + unidadesPedido > waveMax:
+                        continue
+                    
+                    cobertos = sum(1 for itemId in itens if any(itemId in corredores[cId] for cId in melhoresCorredores))
+                    novos = len(itens) - cobertos
+                    candidatos.append((cobertos - novos, pedidoId, unidadesPedido))
+                
+                candidatos.sort(key=lambda x: x[0], reverse=True)
+                
+                pedidoAceito = False
+                for score, pedidoId, unidadesPedido in candidatos:
+                    novaWave = wave + unidadesPedido
                     novaDemanda = calcularDemanda(pedidos, melhoresPedidos + [pedidoId])
-                    if verificaEstoqueDisponivel(novaDemanda, corredores):
+                    
+                    if not verificaEstoqueDisponivel(novaDemanda, corredores):
+                        continue
+                    
+                    novosCorredores = setCoverGuloso(novaDemanda, corredores)
+                    if len(novosCorredores) == 0 or not verificaCoberturaCompleta(melhoresPedidos + [pedidoId], novosCorredores, pedidos, corredores):
+                        continue
+                    
+                    novoObjetivo = novaWave / len(novosCorredores)
+                    
+                    if novoObjetivo >= objetivoAtual or wave < waveMin:
                         melhoresPedidos.append(pedidoId)
-                        quantidadePedidos += sum(pedidos[pedidoId].values())
-            if melhoresPedidos:
-                break
+                        wave = novaWave
+                        melhoresCorredores = novosCorredores
+                        objetivoAtual = novoObjetivo
+                        pedidoAceito = True
+                        break 
+                
+                if not pedidoAceito:
+                    break
 
-        demanda = calcularDemanda(pedidos, melhoresPedidos)
-        melhoresCorredores = setCoverGuloso(demanda, corredores)
+            if waveMin <= wave <= waveMax and verificaCoberturaCompleta(melhoresPedidos, melhoresCorredores, pedidos, corredores):
+                print(f"Instância {i:04d} | semente={semente_atual} | unidades={wave} | corredores={len(melhoresCorredores)} | objetivo={objetivoAtual:.2f}")
+                gerarSaida(melhoresPedidos, melhoresCorredores, filename=nomeSaida)
+                solucao_encontrada = True
+                break 
 
-        wave = quantidadePedidos
-        waveMin = int(waveMin)
-        waveMax = int(waveMax)
-
-        if len(melhoresCorredores) == 0 or len(melhoresPedidos) == 0:
-            print(f"Instância {i:04d} inviável")
-            continue
-
-        objetivoAtual = wave / len(melhoresCorredores)
-
-        while wave < waveMax:
-            proximoMelhorPedido = calcularMelhorPedido(
-                pedidos, melhoresPedidos, corredores, melhoresCorredores, waveMax, wave
-            )
-            if proximoMelhorPedido is None:
-                break
-
-            novaWave = wave + sum(pedidos[proximoMelhorPedido].values())
-            novaDemanda = calcularDemanda(pedidos, melhoresPedidos + [proximoMelhorPedido])
-
-            if not verificaEstoqueDisponivel(novaDemanda, corredores):
-                break
-
-            novosCorredores = setCoverGuloso(novaDemanda, corredores)
-
-            if len(novosCorredores) == 0:
-                break
-
-            if not verificaCoberturaCompleta(melhoresPedidos + [proximoMelhorPedido], novosCorredores, pedidos, corredores):
-                break
-
-            novoObjetivo = novaWave / len(novosCorredores)
-
-            if novoObjetivo >= objetivoAtual or wave < waveMin:
-                melhoresPedidos.append(proximoMelhorPedido)
-                wave = novaWave
-                melhoresCorredores = novosCorredores
-                objetivoAtual = novoObjetivo
-            else:
-                break
-
-        print(f"Instância {i:04d} | unidades={wave} | corredores={len(melhoresCorredores)} | objetivo={objetivoAtual:.2f}")
-        gerarSaida(melhoresPedidos, melhoresCorredores, filename=nomeSaida)
+        if not solucao_encontrada:
+            print(f"Instância {i:04d} inviável ")
