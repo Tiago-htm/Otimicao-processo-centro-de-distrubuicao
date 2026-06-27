@@ -136,7 +136,14 @@ def setCoverGuloso(demanda, corredores):
     return melhoresCorredores
          
 
-
+def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida.txt"):
+    with open(filename, 'w') as f:
+        f.write(f"{len(pedidosSelecionados)}\n")
+        for pedidoId in pedidosSelecionados:
+            f.write(f"{pedidoId}\n")
+        f.write(f"{len(corredoresAtivos)}\n")
+        for corredorId in corredoresAtivos:
+            f.write(f"{corredorId}\n")
 
 
 if __name__ == "__main__":
@@ -193,3 +200,4 @@ if __name__ == "__main__":
     print(f"Unidades: {wave}")
     print(f"Corredores: {melhoresCorredores}")
     print(f"Objetivo: {objetivoAtual:.2f}")
+    gerarSaida(melhoresPedidos, melhoresCorredores)
