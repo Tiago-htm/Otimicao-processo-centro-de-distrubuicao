@@ -136,7 +136,7 @@ def setCoverGuloso(demanda, corredores):
     return melhoresCorredores
          
 
-def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida.txt"):
+def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida2.txt"):
     with open(filename, 'w') as f:
         f.write(f"{len(pedidosSelecionados)}\n")
         for pedidoId in pedidosSelecionados:
@@ -147,7 +147,7 @@ def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida.txt"):
 
 
 if __name__ == "__main__":
-    pedidos, corredores, waveMin, waveMax= organizaPedidosCorredores("data/instance_0001.txt")    
+    pedidos, corredores, waveMin, waveMax= organizaPedidosCorredores("data/instance_0002.txt")    
     
     itemsFrequentes = calcularItemsFrequentes(pedidos)
 
