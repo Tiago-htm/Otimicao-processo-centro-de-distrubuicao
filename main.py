@@ -104,6 +104,49 @@ def calcularDemanda(pedidos, pedidosSelecionados):
     return demanda
 
 
+def setCoverGuloso(demanda, corredores):
+    melhoresCorredores = []
+    itemsRestantes = demanda.copy()    
+    
+    while itemsRestantes: 
+        melhorCorredor = None
+        qtdItemColetados = 0
+        
+        for corredorId, items in corredores.items():
+            if corredorId in melhoresCorredores:
+                continue
+            coletado = 0
+            for itemId, qtd in itemsRestantes.items():
+                if itemId in items:
+                    if items[itemId] >= qtd:
+                        coletado += 1
+            if coletado > qtdItemColetados:
+                melhorCorredor = corredorId
+                qtdItemColetados = coletado
+        
+        if melhorCorredor is None:
+            break
+        
+        for itemId in list(itemsRestantes):
+            if itemId in corredores[melhorCorredor]:
+                if corredores[melhorCorredor][itemId] >= itemsRestantes[itemId]:
+                    itemsRestantes.pop(itemId)
+        
+        melhoresCorredores.append(melhorCorredor)
+    
+    return melhoresCorredores
+        
+
+              
+ 
+                
+
+
+                
+
+
+
+
 if __name__ == "__main__":
     pedidos, corredores, wave= organizaPedidosCorredores("data/instance_0001.txt")    
     
@@ -123,10 +166,10 @@ if __name__ == "__main__":
                 quantidadePedidos += sum(pedidos[pedidoId].values())
 
     print(melhoresPedidos) 
-    #[11, 23, 24, 42] os indices começam do 0 :) entao a linha 13 é a correta!!!!!!!!!!!!!!!!!!!!
     demanda = calcularDemanda(pedidos, melhoresPedidos)
     print(demanda)
-  
+    melhoresCorredores = setCoverGuloso(demanda, corredores)
+    print(melhoresCorredores)
 
     
 
