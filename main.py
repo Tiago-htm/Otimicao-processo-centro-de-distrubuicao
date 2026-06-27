@@ -76,38 +76,29 @@ def setCoverGuloso(demanda, corredores):
 
     while itemsRestantes:
         melhorCorredor = None
-        qtdItemColetados = 0
+        melhorContribuicao = 0
 
         for corredorId, items in corredores.items():
             if corredorId in melhoresCorredores:
                 continue
-            coletado = 0
+            contribuicao = 0
             for itemId, qtd in itemsRestantes.items():
-                jaTemos = 0
-                if itemId in estoqueAcumulado:
-                    jaTemos = estoqueAcumulado[itemId]
-                qtdCorredor = 0
                 if itemId in items:
-                    qtdCorredor = items[itemId]
-                if jaTemos + qtdCorredor >= qtd:
-                    coletado += 1
-            if coletado > qtdItemColetados:
+                    falta = max(0, qtd - estoqueAcumulado.get(itemId, 0))
+                    contribuicao += min(items[itemId], falta)
+            if contribuicao > melhorContribuicao:
                 melhorCorredor = corredorId
-                qtdItemColetados = coletado
+                melhorContribuicao = contribuicao
 
         if melhorCorredor is None:
             break
 
         for itemId, qtd in corredores[melhorCorredor].items():
-            if itemId in estoqueAcumulado:
-                estoqueAcumulado[itemId] += qtd
-            else:
-                estoqueAcumulado[itemId] = qtd
+            estoqueAcumulado[itemId] = estoqueAcumulado.get(itemId, 0) + qtd
 
         for itemId in list(itemsRestantes):
-            if itemId in estoqueAcumulado:
-                if estoqueAcumulado[itemId] >= itemsRestantes[itemId]:
-                    itemsRestantes.pop(itemId)
+            if estoqueAcumulado.get(itemId, 0) >= itemsRestantes[itemId]:
+                itemsRestantes.pop(itemId)
 
         melhoresCorredores.append(melhorCorredor)
 
