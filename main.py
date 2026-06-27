@@ -43,10 +43,9 @@ def organizaPedidosCorredores(filename):
         corredores[i] = items
 
     ultimaLinha = linhas[-1].split() 
-    wave.append(ultimaLinha[0])
-    wave.append(ultimaLinha[1])
 
-    return pedidos, corredores, wave
+
+    return pedidos, corredores, ultimaLinha[0], ultimaLinha[1]
 
 def calcularItemsFrequentes(pedidos):
     frequencia = {}    
@@ -135,20 +134,13 @@ def setCoverGuloso(demanda, corredores):
         melhoresCorredores.append(melhorCorredor)
     
     return melhoresCorredores
-        
-
-              
- 
-                
-
-
-                
+         
 
 
 
 
 if __name__ == "__main__":
-    pedidos, corredores, wave= organizaPedidosCorredores("data/instance_0001.txt")    
+    pedidos, corredores, waveMin, waveMax= organizaPedidosCorredores("data/instance_0001.txt")    
     
     itemsFrequentes = calcularItemsFrequentes(pedidos)
 
@@ -170,7 +162,34 @@ if __name__ == "__main__":
     print(demanda)
     melhoresCorredores = setCoverGuloso(demanda, corredores)
     print(melhoresCorredores)
+  
+    wave = quantidadePedidos
+    waveMin = int(waveMin)
+    waveMax = int(waveMax)
+    objetivoAtual = wave / len(melhoresCorredores)
 
-    
+    while wave < waveMax:
+        proximoMelhorPedido = calcularMelhorPedido(
+            pedidos, melhoresPedidos, corredores, melhoresCorredores, waveMax, wave
+        )
 
-    
+        if proximoMelhorPedido is None:
+            break
+
+        novaWave = wave + sum(pedidos[proximoMelhorPedido].values())
+        novaDemanda = calcularDemanda(pedidos, melhoresPedidos + [proximoMelhorPedido])
+        novosCorredores = setCoverGuloso(novaDemanda, corredores)
+        novoObjetivo = novaWave / len(novosCorredores)
+        # só vou parar quando tiver testado melhor combinação possivel da wave
+        if novoObjetivo >= objetivoAtual or wave < waveMin:
+            melhoresPedidos.append(proximoMelhorPedido)
+            wave = novaWave
+            melhoresCorredores = novosCorredores
+            objetivoAtual = novoObjetivo
+        else:
+            break
+
+    print(f"Wave final: {melhoresPedidos}")
+    print(f"Unidades: {wave}")
+    print(f"Corredores: {melhoresCorredores}")
+    print(f"Objetivo: {objetivoAtual:.2f}")
