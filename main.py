@@ -66,39 +66,36 @@ def criaGrafo(pedidos, correio):
 
     return G
 
-def calcularMelhorPedido(pedidos, pedidosSelecionados, corredores, corredoresAtivos, maxWave, unidadesAtuais):
+def calcularMelhorPedido(grafo, pedidosValidos, pedidosSelecionados, corredoresAtivos, maxWave, unidadesAtuais):
     melhorPedido = None
-    melhorScore = -1 
-    
-    for pedidoId, itens in pedidos.items():
+    melhorScore = -1
+
+    for pedidoId in pedidosValidos:
         if pedidoId in pedidosSelecionados:
             continue
-        
-        unidadesPedido = sum(itens.values())
-        
+
+        unidadesPedido = sum(pedidosValidos[pedidoId].values())
         if unidadesAtuais + unidadesPedido > maxWave:
             continue
-        
+
         cobertos = 0
         novos = 0
-        for itemId in itens:
-            coberto = False
-            for corredorId in corredoresAtivos:
-                if itemId in corredores[corredorId]:
-                    coberto = True
-                    break
-            if coberto:
+        noPedido = ('p', pedidoId)
+        
+        for noItem in grafo.successors(noPedido):  # p -> i
+            itemId = noItem[1]
+            corredoresDoItem = {suc[1] for suc in grafo.successors(noItem)}  # i -> c
+            if corredoresDoItem & set(corredoresAtivos):
                 cobertos += 1
             else:
                 novos += 1
-        
+
         score = cobertos - novos
-        
         if score > melhorScore:
             melhorScore = score
             melhorPedido = pedidoId
-    
-    return melhorPedido    
+
+    return melhorPedido  
 
 
 # verifico qual os items que tem junto com o melhor item dentro de pedidos
@@ -126,7 +123,7 @@ def setCoverGuloso(grafo, demanda):
                 continue
             contribuicao = 0
             noCorredor = ('c', corredorId)
-            for noItem in grafo.predecessors(noCorredor):  # i -> c
+            for noItem in grafo.predecessors(noCorredor):  
                 itemId = noItem[1]
                 if itemId in itemsRestantes:
                     disponivel = grafo[noItem][noCorredor]['peso']
@@ -248,10 +245,7 @@ if __name__ == "__main__":
         objetivoAtual = wave / len(melhoresCorredores)
 
         while wave < waveMax:
-            proximoMelhorPedido = calcularMelhorPedido(
-                pedidosValidos, melhoresPedidos, corredores, melhoresCorredores, waveMax, wave
-            )
-
+            proximoMelhorPedido = calcularMelhorPedido(grafo, pedidosValidos, melhoresPedidos, melhoresCorredores, waveMax, wave)
             if proximoMelhorPedido is None:
                 break
 
