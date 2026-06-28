@@ -234,6 +234,8 @@ if __name__ == "__main__":
 
             novaWave = wave + sum(pedidosValidos[proximoMelhorPedido].values())
             novaDemanda = calcularDemanda(pedidosValidos, melhoresPedidos + [proximoMelhorPedido])
+            if not verificaEstoqueDisponivel(novaDemanda, corredores):
+                break
             novosCorredores = setCoverGuloso(novaDemanda, corredores)
 
             if len(novosCorredores) == 0:
