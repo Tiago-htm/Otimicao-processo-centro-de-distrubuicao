@@ -137,6 +137,7 @@ if __name__ == "__main__":
             melhoresPedidos = []
             quantidadePedidos = 0
 
+            # 1. Construção inicial
             for pedidoId, items in pedidos.items():
                 if semente_atual in items:
                     unidadesPedido = sum(items.values())
@@ -147,14 +148,14 @@ if __name__ == "__main__":
                             quantidadePedidos += unidadesPedido
             
             if not melhoresPedidos:
-                continue 
+                continue
 
             demanda = calcularDemanda(pedidos, melhoresPedidos)
             melhoresCorredores = setCoverGuloso(demanda, corredores)
             wave = quantidadePedidos
 
             if len(melhoresCorredores) == 0 or not verificaCoberturaCompleta(melhoresPedidos, melhoresCorredores, pedidos, corredores):
-                continue 
+                continue
 
             objetivoAtual = wave / len(melhoresCorredores)
 
@@ -182,18 +183,18 @@ if __name__ == "__main__":
                         continue
                     
                     novosCorredores = setCoverGuloso(novaDemanda, corredores)
-                    if len(novosCorredores) == 0 or not verificaCoberturaCompleta(melhoresPedidos + [pedidoId], novosCorredores, pedidos, corredores):
-                        continue
                     
-                    novoObjetivo = novaWave / len(novosCorredores)
+                    if len(novosCorredores) > 0 and verificaCoberturaCompleta(melhoresPedidos + [pedidoId], novosCorredores, pedidos, corredores):
+                        novoObjetivo = novaWave / len(novosCorredores)
+                        
+                        if novoObjetivo >= objetivoAtual or wave < waveMin:
+                            melhoresPedidos.append(pedidoId)
+                            wave = novaWave
+                            melhoresCorredores = novosCorredores
+                            objetivoAtual = novoObjetivo
+                            pedidoAceito = True
                     
-                    if novoObjetivo >= objetivoAtual or wave < waveMin:
-                        melhoresPedidos.append(pedidoId)
-                        wave = novaWave
-                        melhoresCorredores = novosCorredores
-                        objetivoAtual = novoObjetivo
-                        pedidoAceito = True
-                        break 
+                    break 
                 
                 if not pedidoAceito:
                     break
@@ -202,7 +203,7 @@ if __name__ == "__main__":
                 print(f"Instância {i:04d} | semente={semente_atual} | unidades={wave} | corredores={len(melhoresCorredores)} | objetivo={objetivoAtual:.2f}")
                 gerarSaida(melhoresPedidos, melhoresCorredores, filename=nomeSaida)
                 solucao_encontrada = True
-                break 
+                break
 
         if not solucao_encontrada:
-            print(f"Instância {i:04d} inviável ")
+            print(f"Instância {i:04d} inviável")
