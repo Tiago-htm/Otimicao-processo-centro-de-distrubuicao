@@ -207,7 +207,8 @@ def melhorPedidoInicial(grafo, pedidosValidos):
 
 if __name__ == "__main__":
     import os
-    for i in range(1, 21):
+    passaAqui = [5, 8, 9, 13,17]
+    for i in passaAqui:
         nomeArquivo = f"data/instance_{i:04d}.txt"
         if not os.path.exists(nomeArquivo):
             continue
@@ -216,7 +217,6 @@ if __name__ == "__main__":
 
         pedidos, corredores, waveMin, waveMax = organizaPedidosCorredores(nomeArquivo)
         grafo = criaGrafo(pedidos, corredores)
-
         waveMin = int(waveMin)
         waveMax = int(waveMax)
 
@@ -230,12 +230,12 @@ if __name__ == "__main__":
             print(f"Instância {i:04d} inviável")
             continue
 
-        melhorPedido = melhorPedidoInicial(grafo,pedidosValidos)
+        melhorPedido = melhorPedidoInicial(grafo, pedidosValidos)
         melhoresPedidos = [melhorPedido]
         quantidadePedidos = sum(pedidosValidos[melhorPedido].values())
 
         demanda = calcularDemanda(pedidos, melhoresPedidos)
-        melhoresCorredores = setCoverGuloso(grafo,demanda)
+        melhoresCorredores = setCoverGuloso(grafo, demanda)
 
         if len(melhoresCorredores) == 0:
             print(f"Instância {i:04d} inviável")
@@ -245,16 +245,21 @@ if __name__ == "__main__":
         objetivoAtual = wave / len(melhoresCorredores)
 
         while wave < waveMax:
-            proximoMelhorPedido = calcularMelhorPedido(grafo, pedidosValidos, melhoresPedidos, melhoresCorredores, waveMax, wave)
+            proximoMelhorPedido = calcularMelhorPedido(
+                grafo, pedidosValidos, melhoresPedidos, melhoresCorredores, waveMax, wave
+            )
             if proximoMelhorPedido is None:
                 break
 
             novaWave = wave + sum(pedidosValidos[proximoMelhorPedido].values())
+            if novaWave > waveMax:
+                break
+
             novaDemanda = calcularDemanda(pedidosValidos, melhoresPedidos + [proximoMelhorPedido])
             if not verificaEstoqueDisponivel(novaDemanda, corredores):
                 break
-            novosCorredores = setCoverGuloso(grafo,novaDemanda)
 
+            novosCorredores = setCoverGuloso(grafo, novaDemanda)
             if len(novosCorredores) == 0:
                 break
 
@@ -267,6 +272,54 @@ if __name__ == "__main__":
                 objetivoAtual = novoObjetivo
             else:
                 break
+
+        # força atingir waveMin se necessário
+        while wave < waveMin:
+            adicionou = False
+            for pedidoId in pedidosValidos:
+                if pedidoId in melhoresPedidos:
+                    continue
+                novaWave = wave + sum(pedidosValidos[pedidoId].values())
+                if novaWave > waveMax:
+                    continue
+                novaDemanda = calcularDemanda(pedidosValidos, melhoresPedidos + [pedidoId])
+                if not verificaEstoqueDisponivel(novaDemanda, corredores):
+                    continue
+                novosCorredores = setCoverGuloso(grafo, novaDemanda)
+                if len(novosCorredores) == 0:
+                    continue
+                melhoresPedidos.append(pedidoId)
+                wave = novaWave
+                melhoresCorredores = novosCorredores
+                adicionou = True
+                break
+            if not adicionou:
+                break
+
+        wave = sum(sum(pedidosValidos[p].values()) for p in melhoresPedidos)
+
+        if wave < waveMin or wave > waveMax:
+            print(f"Instância {i:04d} inviável - wave fora dos limites")
+            continue
+
+        demandaFinal = calcularDemanda(pedidosValidos, melhoresPedidos)
+        estoqueTotal = {}
+        for corredorId in melhoresCorredores:
+            for itemId, qtd in corredores[corredorId].items():
+                if itemId in estoqueTotal:
+                    estoqueTotal[itemId] += qtd
+                else:
+                    estoqueTotal[itemId] = qtd
+
+        solucaoValida = True
+        for itemId, qtdNecessaria in demandaFinal.items():
+            if estoqueTotal.get(itemId, 0) < qtdNecessaria:
+                solucaoValida = False
+                break
+
+        if not solucaoValida:
+            print(f"Instância {i:04d} inviável - estoque insuficiente")
+            continue
 
         print(f"Instância {i:04d} | unidades={wave} | corredores={len(melhoresCorredores)} | objetivo={objetivoAtual:.2f}")
         gerarSaida(melhoresPedidos, melhoresCorredores, filename=nomeSaida)
