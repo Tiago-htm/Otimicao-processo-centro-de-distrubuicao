@@ -1,142 +1,48 @@
+import sys
+
+import networkx as nx
+
+
 def organizaPedidosCorredores(filename):
     with open(filename, 'r') as f:
         linhas = f.readlines()
-    
+
     primeiraLinha = list(map(int, linhas[0].split()))
     quantidadePedidos = primeiraLinha[0]
     quantidadeCorredor = primeiraLinha[2]
 
     pedidos = {}
     corredores = {}
-    wave = []
 
     for i in range(quantidadePedidos):
         capturaItem = linhas[i + 1].split()
         numeros = []
         for j in capturaItem:
-          numeros.append(int(j))
-        n = numeros[0]
+            numeros.append(int(j))
         items = {}
         k = 1
         while k < len(numeros):
-            itemId = numeros[k]
-            quantidade = numeros[k + 1]
-            items[itemId] = quantidade
-            k += 2         
-
+            items[numeros[k]] = numeros[k + 1]
+            k += 2
         pedidos[i] = items
-   
+
     for i in range(quantidadeCorredor):
-        capturaItem =  linhas[1 + quantidadePedidos + i].split()
+        capturaItem = linhas[1 + quantidadePedidos + i].split()
         numeros = []
         for j in capturaItem:
             numeros.append(int(j))
-        n = numeros[0]
         items = {}
         k = 1
         while k < len(numeros):
-            itemId = numeros[k]
-            quantidade = numeros[k + 1]
-            items[itemId] = quantidade
+            items[numeros[k]] = numeros[k + 1]
             k += 2
-        
         corredores[i] = items
 
-    ultimaLinha = linhas[-1].split() 
-
-
+    ultimaLinha = linhas[-1].split()
     return pedidos, corredores, ultimaLinha[0], ultimaLinha[1]
 
-def calcularItemsFrequentes(pedidos):
-    frequencia = {}    
 
-    for pedidoId, items in pedidos.items():
-            for itemId in items:
-               if itemId in frequencia:
-                     frequencia[itemId] += 1
-               else: 
-                    frequencia[itemId] = 1 
-
-    return sorted(frequencia.items(), key=lambda x: x[1], reverse=True)
-
-def calcularMelhorPedido(pedidos, pedidosSelecionados, corredores, corredoresAtivos, maxWave, unidadesAtuais):
-    melhorPedido = None
-    melhorScore = -1 
-    
-    for pedidoId, itens in pedidos.items():
-        if pedidoId in pedidosSelecionados:
-            continue
-        
-        unidadesPedido = sum(itens.values())
-        
-        if unidadesAtuais + unidadesPedido > maxWave:
-            continue
-        
-        cobertos = 0
-        novos = 0
-        for itemId in itens:
-            coberto = False
-            for corredorId in corredoresAtivos:
-                if itemId in corredores[corredorId]:
-                    coberto = True
-                    break
-            if coberto:
-                cobertos += 1
-            else:
-                novos += 1
-        
-        score = cobertos - novos
-        
-        if score > melhorScore:
-            melhorScore = score
-            melhorPedido = pedidoId
-    
-    return melhorPedido    
-
-
-# verifico qual os items que tem junto com o melhor item dentro de pedidos
-def calcularDemanda(pedidos, pedidosSelecionados):
-    demanda = {}
-    for pedidoId in pedidosSelecionados:
-        for itemId, qtd in pedidos[pedidoId].items():
-             demanda[itemId] = demanda.get(itemId, 0) + qtd
-    return demanda
-
-
-def setCoverGuloso(demanda, corredores):
-    melhoresCorredores = []
-    itemsRestantes = demanda.copy()    
-    
-    while itemsRestantes: 
-        melhorCorredor = None
-        qtdItemColetados = 0
-        
-        for corredorId, items in corredores.items():
-            if corredorId in melhoresCorredores:
-                continue
-            coletado = 0
-            for itemId, qtd in itemsRestantes.items():
-                if itemId in items:
-                    if items[itemId] >= qtd:
-                        coletado += 1
-            if coletado > qtdItemColetados:
-                melhorCorredor = corredorId
-                qtdItemColetados = coletado
-        
-        if melhorCorredor is None:
-            break
-        
-        for itemId in list(itemsRestantes):
-            if itemId in corredores[melhorCorredor]:
-                if corredores[melhorCorredor][itemId] >= itemsRestantes[itemId]:
-                    itemsRestantes.pop(itemId)
-        
-        melhoresCorredores.append(melhorCorredor)
-    
-    return melhoresCorredores
-         
-
-def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida2.txt"):
+def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida.txt"):
     with open(filename, 'w') as f:
         f.write(f"{len(pedidosSelecionados)}\n")
         for pedidoId in pedidosSelecionados:
@@ -146,48 +52,71 @@ def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida2.txt"):
             f.write(f"{corredorId}\n")
 
 
-if __name__ == "__main__":
-    pedidos, corredores, waveMin, waveMax= organizaPedidosCorredores("data/instance_0002.txt")    
-    
-    itemsFrequentes = calcularItemsFrequentes(pedidos)
 
-    melhorItem = itemsFrequentes[0][0]
+def calcularDemanda(pedidos, pedidosSelecionados):
+    demanda = {}
+    for pedidoId in pedidosSelecionados:
+        for itemId, qtd in pedidos[pedidoId].items():
+            demanda[itemId] = demanda.get(itemId, 0) + qtd
+    return demanda
 
-    print(melhorItem)
 
-    melhoresPedidos =  []
+def verificaEstoqueDisponivel(demanda, corredores):
+    for itemId, qtdNecessaria in demanda.items():
+        totalEstoque = 0
+        for corredorId, items in corredores.items():
+            if itemId in items:
+                totalEstoque += items[itemId]
+        if totalEstoque < qtdNecessaria:
+            return False
+    return True
 
-    quantidadePedidos = 0
 
-    for pedidoId, items in pedidos.items():  # dentro de pedidos eu busco todos os items
-        if melhorItem in items:      # eu verifico se existe o Item que mais repete no dataset em items
-                melhoresPedidos.append(pedidoId)
-                quantidadePedidos += sum(pedidos[pedidoId].values())
 
-    print(melhoresPedidos) 
+def criaGrafo(pedidos, corredores):
+    G = nx.DiGraph()
+    for pedidoId, items in pedidos.items():
+        G.add_node(('p', pedidoId), camada='pedido')
+        for itemId, qtd in items.items():
+            G.add_node(('i', itemId), camada='item')
+            G.add_edge(('p', pedidoId), ('i', itemId), peso=qtd)
+    for corredorId, items in corredores.items():
+        G.add_node(('c', corredorId), camada='corredor')
+        for itemId, qtd in items.items():
+            G.add_node(('i', itemId), camada='item')
+            G.add_edge(('i', itemId), ('c', corredorId), peso=qtd)
+    return G
+
+
+def executaWave(pedidos, corredores, pedidosValidos, waveMin, waveMax,
+                 melhoresPedidos, quantidadePedidos,
+                 fnMelhorPedido, fnSetCover):
+
     demanda = calcularDemanda(pedidos, melhoresPedidos)
-    print(demanda)
-    melhoresCorredores = setCoverGuloso(demanda, corredores)
-    print(melhoresCorredores)
-  
+    melhoresCorredores = fnSetCover(demanda)
+
+    if len(melhoresCorredores) == 0:
+        return None, None, None
+
     wave = quantidadePedidos
-    waveMin = int(waveMin)
-    waveMax = int(waveMax)
     objetivoAtual = wave / len(melhoresCorredores)
 
     while wave < waveMax:
-        proximoMelhorPedido = calcularMelhorPedido(
-            pedidos, melhoresPedidos, corredores, melhoresCorredores, waveMax, wave
+        proximoMelhorPedido = fnMelhorPedido(
+            pedidosValidos, melhoresPedidos, melhoresCorredores, waveMax, wave
         )
-
         if proximoMelhorPedido is None:
             break
-
-        novaWave = wave + sum(pedidos[proximoMelhorPedido].values())
-        novaDemanda = calcularDemanda(pedidos, melhoresPedidos + [proximoMelhorPedido])
-        novosCorredores = setCoverGuloso(novaDemanda, corredores)
+        novaWave = wave + sum(pedidosValidos[proximoMelhorPedido].values())
+        if novaWave > waveMax:
+            break
+        novaDemanda = calcularDemanda(pedidosValidos, melhoresPedidos + [proximoMelhorPedido])
+        if not verificaEstoqueDisponivel(novaDemanda, corredores):
+            break
+        novosCorredores = fnSetCover(novaDemanda)
+        if len(novosCorredores) == 0:
+            break
         novoObjetivo = novaWave / len(novosCorredores)
-        # só vou parar quando tiver testado melhor combinação possivel da wave
         if novoObjetivo >= objetivoAtual or wave < waveMin:
             melhoresPedidos.append(proximoMelhorPedido)
             wave = novaWave
@@ -196,8 +125,38 @@ if __name__ == "__main__":
         else:
             break
 
-    print(f"Wave final: {melhoresPedidos}")
-    print(f"Unidades: {wave}")
-    print(f"Corredores: {melhoresCorredores}")
-    print(f"Objetivo: {objetivoAtual:.2f}")
-    gerarSaida(melhoresPedidos, melhoresCorredores)
+    while wave < waveMin:
+        adicionou = False
+        for pedidoId in pedidosValidos:
+            if pedidoId in melhoresPedidos:
+                continue
+            novaWave = wave + sum(pedidosValidos[pedidoId].values())
+            if novaWave > waveMax:
+                continue
+            novaDemanda = calcularDemanda(pedidosValidos, melhoresPedidos + [pedidoId])
+            if not verificaEstoqueDisponivel(novaDemanda, corredores):
+                continue
+            novosCorredores = fnSetCover(novaDemanda)
+            if len(novosCorredores) == 0:
+                continue
+            melhoresPedidos.append(pedidoId)
+            wave = novaWave
+            melhoresCorredores = novosCorredores
+            adicionou = True
+            break
+        if not adicionou:
+            break
+
+    return melhoresPedidos, melhoresCorredores, objetivoAtual
+
+
+
+if __name__ == "__main__":
+    from src.runner import rodaInstancias
+
+    if len(sys.argv) > 1:
+        instancias = [int(arg) for arg in sys.argv[1:]]
+    else:
+        instancias = list(range(1, 21))
+
+    rodaInstancias(instancias)
