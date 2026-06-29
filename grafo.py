@@ -1,70 +1,6 @@
 import networkx as nx
 
-def organizaPedidosCorredores(filename):
-    with open(filename, 'r') as f:
-        linhas = f.readlines()
-    
-    primeiraLinha = list(map(int, linhas[0].split()))
-    quantidadePedidos = primeiraLinha[0]
-    quantidadeCorredor = primeiraLinha[2]
 
-    pedidos = {}
-    corredores = {}
-    wave = []
-
-    for i in range(quantidadePedidos):
-        capturaItem = linhas[i + 1].split()
-        numeros = []
-        for j in capturaItem:
-          numeros.append(int(j))
-        n = numeros[0]
-        items = {}
-        k = 1
-        while k < len(numeros):
-            itemId = numeros[k]
-            quantidade = numeros[k + 1]
-            items[itemId] = quantidade
-            k += 2         
-
-        pedidos[i] = items
-   
-    for i in range(quantidadeCorredor):
-        capturaItem =  linhas[1 + quantidadePedidos + i].split()
-        numeros = []
-        for j in capturaItem:
-            numeros.append(int(j))
-        n = numeros[0]
-        items = {}
-        k = 1
-        while k < len(numeros):
-            itemId = numeros[k]
-            quantidade = numeros[k + 1]
-            items[itemId] = quantidade
-            k += 2
-        
-        corredores[i] = items
-
-    ultimaLinha = linhas[-1].split() 
-
-
-    return pedidos, corredores, ultimaLinha[0], ultimaLinha[1]
-
-
-def criaGrafo(pedidos, correio):
-    G = nx.DiGraph()  
-    for pedidoId, items in pedidos.items():
-        G.add_node(('p', pedidoId), camada='pedido')
-        for itemId, qtd in items.items():
-            G.add_node(('i', itemId), camada='item')
-            G.add_edge(('p', pedidoId), ('i', itemId), peso=qtd) 
-
-    for corredorId, items in corredores.items():
-        G.add_node(('c', corredorId), camada='corredor')
-        for itemId, qtd in items.items():
-            G.add_node(('i', itemId), camada='item')
-            G.add_edge(('i', itemId), ('c', corredorId), peso=qtd)
-
-    return G
 
 def calcularMelhorPedido(grafo, pedidosValidos, pedidosSelecionados, corredoresAtivos, maxWave, unidadesAtuais):
     melhorPedido = None
@@ -98,13 +34,24 @@ def calcularMelhorPedido(grafo, pedidosValidos, pedidosSelecionados, corredoresA
     return melhorPedido  
 
 
-# verifico qual os items que tem junto com o melhor item dentro de pedidos
-def calcularDemanda(pedidos, pedidosSelecionados):
-    demanda = {}
-    for pedidoId in pedidosSelecionados:
-        for itemId, qtd in pedidos[pedidoId].items():
-             demanda[itemId] = demanda.get(itemId, 0) + qtd
-    return demanda
+
+# esta função transforma pedido item e corredores em um grafo tripartido, conforme Figura  1 da documentacação.
+def criaGrafo(pedidos, corredores):
+    G = nx.DiGraph()  
+    for pedidoId, items in pedidos.items():
+        G.add_node(('p', pedidoId), camada='pedido')
+        for itemId, qtd in items.items():
+            G.add_node(('i', itemId), camada='item')
+            G.add_edge(('p', pedidoId), ('i', itemId), peso=qtd) 
+
+    for corredorId, items in corredores.items():
+        G.add_node(('c', corredorId), camada='corredor')
+        for itemId, qtd in items.items():
+            G.add_node(('i', itemId), camada='item')
+            G.add_edge(('i', itemId), ('c', corredorId), peso=qtd)
+
+    return G
+
 
 
 def setCoverGuloso(grafo, demanda):
@@ -152,15 +99,6 @@ def setCoverGuloso(grafo, demanda):
     return corredoresSelecionados
 
 
-def verificaEstoqueDisponivel(demanda, corredores):
-    for itemId, qtdNecessaria in demanda.items():
-        totalEstoque = 0
-        for corredorId, items in corredores.items():
-            if itemId in items:
-                totalEstoque += items[itemId]
-        if totalEstoque < qtdNecessaria:
-            return False
-    return True
 
 
 def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida2.txt"):

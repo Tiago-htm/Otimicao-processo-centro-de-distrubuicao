@@ -1,3 +1,6 @@
+import networkx as nx
+
+
 def organizaPedidosCorredores(filename):
     with open(filename, 'r') as f:
         linhas = f.readlines()
@@ -47,27 +50,47 @@ def organizaPedidosCorredores(filename):
 
     return pedidos, corredores, ultimaLinha[0], ultimaLinha[1]
 
-# esta funcao transforma pedido item e corredores em um grafo tripartido, conforme Figura  1 da documentacação.
-def criaGrafo(pedidos, corredores):
-    G = nx.DiGraph()  
-    for pedidoId, items in pedidos.items():
-        G.add_node(('p', pedidoId), camada='pedido')
-        for itemId, qtd in items.items():
-            G.add_node(('i', itemId), camada='item')
-            G.add_edge(('p', pedidoId), ('i', itemId), peso=qtd) 
+# verifico qual os items que tem junto com o melhor item dentro de pedidos
+def calcularDemanda(pedidos, pedidosSelecionados):
+    demanda = {}
+    for pedidoId in pedidosSelecionados:
+        for itemId, qtd in pedidos[pedidoId].items():
+             demanda[itemId] = demanda.get(itemId, 0) + qtd
+    return demanda
 
-    for corredorId, items in corredores.items():
-        G.add_node(('c', corredorId), camada='corredor')
-        for itemId, qtd in items.items():
-            G.add_node(('i', itemId), camada='item')
-            G.add_edge(('i', itemId), ('c', corredorId), peso=qtd)
 
-    return G
+         
+def verificaEstoqueDisponivel(demanda, corredores):
+    for itemId, qtdNecessaria in demanda.items():
+        totalEstoque = 0
+        for corredorId, items in corredores.items():
+            if itemId in items:
+                totalEstoque += items[itemId]
+        if totalEstoque < qtdNecessaria:
+            return False
+    return True
+
+
+
+
+def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida2.txt"):
+    with open(filename, 'w') as f:
+        f.write(f"{len(pedidosSelecionados)}\n")
+        for pedidoId in pedidosSelecionados:
+            f.write(f"{pedidoId}\n")
+        f.write(f"{len(corredoresAtivos)}\n")
+        for corredorId in corredoresAtivos:
+            f.write(f"{corredorId}\n")
+
 
 if __name__ == "__main__":
     pedidos, corredores, waveMin, waveMax= organizaPedidosCorredores("data/instance_0002.txt")    
+    
     grafo = criaGrafo(pedidos, corredores)
-
+    print(f"Pedidos: {len([n for n in grafo.nodes if n[0] == 'p'])}")
+    print(f"Itens: {len([n for n in grafo.nodes if n[0] == 'i'])}")
+    print(f"Corredores: {len([n for n in grafo.nodes if n[0] == 'c'])}")
+    print(f"Arestas p->i: {len([e for e in grafo.edges if e[0][0] == 'p'])}")
+    print(f"Arestas i->c: {len([e for e in grafo.edges if e[0][0] == 'i'])}")
     waveMin = int(waveMin)
     waveMax = int(waveMax)
-
