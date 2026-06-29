@@ -8,8 +8,6 @@ com grafo) e compara os resultados.
 ## Como executar o projeto 
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
-cd Otimicao-processo-centro-de-distrubuicao
 
 python3 -m venv .venv
 source .venv/bin/activate 
