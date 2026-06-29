@@ -4,6 +4,22 @@ Projeto de otimização de wave-picking em centro de distribuição.
 Implementa 3 abordagens diferentes (dicionário e duas variantes
 com grafo) e compara os resultados.
 
+
+## Como executar o projeto 
+
+```bash
+git clone <URL_DO_REPOSITORIO>
+cd Otimicao-processo-centro-de-distrubuicao
+
+python3 -m venv .venv
+source .venv/bin/activate 
+
+python3 -m pip install --break-system-packages numpy (baixar dependencias)
+pip install networkx (baixar dependencias)
+
+python3 main.py
+```
+
 ## Estrutura
 
 ```

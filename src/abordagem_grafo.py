@@ -1,3 +1,6 @@
+
+
+# Seleciona o pedido inicial que compartilha corredores com o maior número de pedidos válidos.
 def melhorPedidoInicialGrafo(grafo, pedidosValidos):
     melhorPedido = None
     melhorScore = -1
@@ -25,7 +28,7 @@ def melhorPedidoInicialGrafo(grafo, pedidosValidos):
 
     return melhorPedido
 
-
+#Busca o item que mais se repete entre os pedidos
 def calcularItemMaisFrequente(grafo, pedidosValidos):
     frequencia = {}
     for pedidoId in pedidosValidos:
@@ -44,7 +47,8 @@ def calcularItemMaisFrequente(grafo, pedidosValidos):
             melhorItem = itemId
     return melhorItem
 
-
+# Seleciona o próximo pedido que melhor aproveita os corredores já ativos,
+# respeitando o limite máximo de unidades da wave.
 def calcularMelhorPedidoGrafo(grafo, pedidosValidos, pedidosSelecionados, corredoresAtivos, maxWave, unidadesAtuais):
     melhorPedido = None
     melhorScore = -1
@@ -71,7 +75,7 @@ def calcularMelhorPedidoGrafo(grafo, pedidosValidos, pedidosSelecionados, corred
 
     return melhorPedido
 
-
+#Utiliza o setCover com o metódo guloso para achar o melhor corredor 
 def setCoverGulosoGrafo(grafo, demanda):
     corredoresSelecionados = []
     itemsRestantes = demanda.copy()

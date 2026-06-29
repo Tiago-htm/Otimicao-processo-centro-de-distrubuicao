@@ -2,7 +2,8 @@ import sys
 
 import networkx as nx
 
-
+# Lê o arquivo de entrada e organiza os dados em dois dicionários:
+# pedidos e corredores, no formato {id: {item: quantidade}}
 def organizaPedidosCorredores(filename):
     with open(filename, 'r') as f:
         linhas = f.readlines()
@@ -41,7 +42,7 @@ def organizaPedidosCorredores(filename):
     ultimaLinha = linhas[-1].split()
     return pedidos, corredores, ultimaLinha[0], ultimaLinha[1]
 
-
+#Gera a saida com os pedidos e corredores.
 def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida.txt"):
     with open(filename, 'w') as f:
         f.write(f"{len(pedidosSelecionados)}\n")
@@ -52,7 +53,7 @@ def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida.txt"):
             f.write(f"{corredorId}\n")
 
 
-
+# Calcula a demanda total de itens a partir dos pedidos selecionados
 def calcularDemanda(pedidos, pedidosSelecionados):
     demanda = {}
     for pedidoId in pedidosSelecionados:
@@ -60,7 +61,7 @@ def calcularDemanda(pedidos, pedidosSelecionados):
             demanda[itemId] = demanda.get(itemId, 0) + qtd
     return demanda
 
-
+#verifica se o item que esta sendo buscado está com estoque disponível.
 def verificaEstoqueDisponivel(demanda, corredores):
     for itemId, qtdNecessaria in demanda.items():
         totalEstoque = 0
@@ -72,7 +73,14 @@ def verificaEstoqueDisponivel(demanda, corredores):
     return True
 
 
-
+#Cria o grafo a parti do dicionario pedidos e corredores.
+#Para instacia 0002, a saída:
+#Pedidos: 7
+#Itens: 7
+#Corredores: 33
+#Aresta pedidos->itens: 7
+#Aresta itens->coluna: 36 
+# pedido -> item -> corredor
 def criaGrafo(pedidos, corredores):
     G = nx.DiGraph()
     for pedidoId, items in pedidos.items():
@@ -87,7 +95,8 @@ def criaGrafo(pedidos, corredores):
             G.add_edge(('i', itemId), ('c', corredorId), peso=qtd)
     return G
 
-
+# Constrói uma wave de pedidos respeitando limites mínimo e máximo,
+# ajustando dinamicamente os pedidos e corredores via heurísticas.
 def executaWave(pedidos, corredores, pedidosValidos, waveMin, waveMax,
                  melhoresPedidos, quantidadePedidos,
                  fnMelhorPedido, fnSetCover):
@@ -153,9 +162,9 @@ def executaWave(pedidos, corredores, pedidosValidos, waveMin, waveMax,
 
 if __name__ == "__main__":
     from src.runner import rodaInstancias
-
+    #se passar algum  instancia especifica ele vai executar somente ela
     if len(sys.argv) > 1:
-        instancias = [int(arg) for arg in sys.argv[1:]]
+        instancias = [int(arg) for arg in sys.argv[1:]]       
     else:
         instancias = list(range(1, 21))
 

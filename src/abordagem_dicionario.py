@@ -1,3 +1,4 @@
+# Seleciona o pedido inicial que compartilha corredores com o maior número de pedidos válidos.
 def melhorPedidoInicialDicionario(pedidosValidos, corredores):
     melhorPedido = None
     melhorScore = -1
@@ -24,7 +25,8 @@ def melhorPedidoInicialDicionario(pedidosValidos, corredores):
 
     return melhorPedido
 
-
+# Seleciona o próximo pedido que melhor aproveita os corredores já ativos,
+# respeitando o limite máximo de unidades da wave.
 def calcularMelhorPedidoDicionario(pedidos, pedidosSelecionados, corredores, corredoresAtivos, maxWave, unidadesAtuais):
     melhorPedido = None
     melhorScore = -1
@@ -54,7 +56,7 @@ def calcularMelhorPedidoDicionario(pedidos, pedidosSelecionados, corredores, cor
 
     return melhorPedido
 
-
+#Utiliza o setCover com o metódo guloso para achar o melhor corredor
 def setCoverGulosoDicionario(demanda, corredores):
     melhoresCorredores = []
     itemsRestantes = demanda.copy()

@@ -19,11 +19,11 @@ from src.abordagem_grafo import (
     setCoverGulosoGrafo,
 )
 
-
+#define os tres tipos de abordagem que temos
 NOMES_ABORDAGENS = ['dicionario_pedido', 'grafo_pedido', 'grafo_item']
 
 
-
+#rediriciona para calculaPedidoInicial  conforme abordagem utilizada
 def calculaPedidoInicial(nomeAbordagem, pedidosValidos, corredores, grafo):
     if nomeAbordagem == 'dicionario_pedido':
         pedidoId = melhorPedidoInicialDicionario(pedidosValidos, corredores)
@@ -48,7 +48,7 @@ def calculaPedidoInicial(nomeAbordagem, pedidosValidos, corredores, grafo):
     )
     return melhoresPedidos, quantidadePedidos
 
-
+#rediriciona para calcularMelhorPedido conforme abordagem utilizada
 def calculaMelhorPedido(nomeAbordagem, corredores, grafo,
                          pedidosValidos, pedidosSelecionados, corredoresAtivos,
                          maxWave, unidadesAtuais):
@@ -65,7 +65,7 @@ def calculaMelhorPedido(nomeAbordagem, corredores, grafo,
     else:
         raise ValueError(f"abordagem desconhecida: {nomeAbordagem}")
 
-
+# redireciona para  setCover conforme a abordagem
 def calculaSetCover(nomeAbordagem, corredores, grafo, demanda):
     if nomeAbordagem == 'dicionario_pedido':
         return setCoverGulosoDicionario(demanda, corredores)
@@ -77,7 +77,7 @@ def calculaSetCover(nomeAbordagem, corredores, grafo, demanda):
         raise ValueError(f"abordagem desconhecida: {nomeAbordagem}")
 
 
-
+# Valida se a solução respeita waveMin, waveMax e estoque
 def validaSolucao(pedidosValidos, corredores, melhoresPedidos, melhoresCorredores, waveMin, waveMax):
     wave = sum(sum(pedidosValidos[p].values()) for p in melhoresPedidos)
 
@@ -96,7 +96,8 @@ def validaSolucao(pedidosValidos, corredores, melhoresPedidos, melhoresCorredore
 
     return True, None, wave
 
-
+# Responsável por executar uma abordagem específica numa instância
+# Mede o tempo, chama executaWave e valida o resultado
 def rodaAbordagem(nomeAbordagem, pedidos, corredores, grafo, pedidosValidos,
                    waveMin, waveMax, indiceInstancia):
     tempoInicio = time.perf_counter()
@@ -145,7 +146,7 @@ def rodaAbordagem(nomeAbordagem, pedidos, corredores, grafo, pedidosValidos,
 
 
 
-
+#Executa as instancia e começa a marcar o tempo total.
 def rodaInstancias(indices):
     tempoTotalInicio = time.perf_counter()
 
