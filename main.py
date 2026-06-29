@@ -47,157 +47,27 @@ def organizaPedidosCorredores(filename):
 
     return pedidos, corredores, ultimaLinha[0], ultimaLinha[1]
 
-def calcularItemsFrequentes(pedidos):
-    frequencia = {}    
-
+# esta funcao transforma pedido item e corredores em um grafo tripartido, conforme Figura  1 da documentacação.
+def criaGrafo(pedidos, corredores):
+    G = nx.DiGraph()  
     for pedidoId, items in pedidos.items():
-            for itemId in items:
-               if itemId in frequencia:
-                     frequencia[itemId] += 1
-               else: 
-                    frequencia[itemId] = 1 
+        G.add_node(('p', pedidoId), camada='pedido')
+        for itemId, qtd in items.items():
+            G.add_node(('i', itemId), camada='item')
+            G.add_edge(('p', pedidoId), ('i', itemId), peso=qtd) 
 
-    return sorted(frequencia.items(), key=lambda x: x[1], reverse=True)
+    for corredorId, items in corredores.items():
+        G.add_node(('c', corredorId), camada='corredor')
+        for itemId, qtd in items.items():
+            G.add_node(('i', itemId), camada='item')
+            G.add_edge(('i', itemId), ('c', corredorId), peso=qtd)
 
-def calcularMelhorPedido(pedidos, pedidosSelecionados, corredores, corredoresAtivos, maxWave, unidadesAtuais):
-    melhorPedido = None
-    melhorScore = -1 
-    
-    for pedidoId, itens in pedidos.items():
-        if pedidoId in pedidosSelecionados:
-            continue
-        
-        unidadesPedido = sum(itens.values())
-        
-        if unidadesAtuais + unidadesPedido > maxWave:
-            continue
-        
-        cobertos = 0
-        novos = 0
-        for itemId in itens:
-            coberto = False
-            for corredorId in corredoresAtivos:
-                if itemId in corredores[corredorId]:
-                    coberto = True
-                    break
-            if coberto:
-                cobertos += 1
-            else:
-                novos += 1
-        
-        score = cobertos - novos
-        
-        if score > melhorScore:
-            melhorScore = score
-            melhorPedido = pedidoId
-    
-    return melhorPedido    
-
-
-# verifico qual os items que tem junto com o melhor item dentro de pedidos
-def calcularDemanda(pedidos, pedidosSelecionados):
-    demanda = {}
-    for pedidoId in pedidosSelecionados:
-        for itemId, qtd in pedidos[pedidoId].items():
-             demanda[itemId] = demanda.get(itemId, 0) + qtd
-    return demanda
-
-
-def setCoverGuloso(demanda, corredores):
-    melhoresCorredores = []
-    itemsRestantes = demanda.copy()    
-    
-    while itemsRestantes: 
-        melhorCorredor = None
-        qtdItemColetados = 0
-        
-        for corredorId, items in corredores.items():
-            if corredorId in melhoresCorredores:
-                continue
-            coletado = 0
-            for itemId, qtd in itemsRestantes.items():
-                if itemId in items:
-                    if items[itemId] >= qtd:
-                        coletado += 1
-            if coletado > qtdItemColetados:
-                melhorCorredor = corredorId
-                qtdItemColetados = coletado
-        
-        if melhorCorredor is None:
-            break
-        
-        for itemId in list(itemsRestantes):
-            if itemId in corredores[melhorCorredor]:
-                if corredores[melhorCorredor][itemId] >= itemsRestantes[itemId]:
-                    itemsRestantes.pop(itemId)
-        
-        melhoresCorredores.append(melhorCorredor)
-    
-    return melhoresCorredores
-         
-
-def gerarSaida(pedidosSelecionados, corredoresAtivos, filename="saida2.txt"):
-    with open(filename, 'w') as f:
-        f.write(f"{len(pedidosSelecionados)}\n")
-        for pedidoId in pedidosSelecionados:
-            f.write(f"{pedidoId}\n")
-        f.write(f"{len(corredoresAtivos)}\n")
-        for corredorId in corredoresAtivos:
-            f.write(f"{corredorId}\n")
-
+    return G
 
 if __name__ == "__main__":
     pedidos, corredores, waveMin, waveMax= organizaPedidosCorredores("data/instance_0002.txt")    
-    
-    itemsFrequentes = calcularItemsFrequentes(pedidos)
+    grafo = criaGrafo(pedidos, corredores)
 
-    melhorItem = itemsFrequentes[0][0]
-
-    print(melhorItem)
-
-    melhoresPedidos =  []
-
-    quantidadePedidos = 0
-
-    for pedidoId, items in pedidos.items():  # dentro de pedidos eu busco todos os items
-        if melhorItem in items:      # eu verifico se existe o Item que mais repete no dataset em items
-                melhoresPedidos.append(pedidoId)
-                quantidadePedidos += sum(pedidos[pedidoId].values())
-
-    print(melhoresPedidos) 
-    demanda = calcularDemanda(pedidos, melhoresPedidos)
-    print(demanda)
-    melhoresCorredores = setCoverGuloso(demanda, corredores)
-    print(melhoresCorredores)
-  
-    wave = quantidadePedidos
     waveMin = int(waveMin)
     waveMax = int(waveMax)
-    objetivoAtual = wave / len(melhoresCorredores)
 
-    while wave < waveMax:
-        proximoMelhorPedido = calcularMelhorPedido(
-            pedidos, melhoresPedidos, corredores, melhoresCorredores, waveMax, wave
-        )
-
-        if proximoMelhorPedido is None:
-            break
-
-        novaWave = wave + sum(pedidos[proximoMelhorPedido].values())
-        novaDemanda = calcularDemanda(pedidos, melhoresPedidos + [proximoMelhorPedido])
-        novosCorredores = setCoverGuloso(novaDemanda, corredores)
-        novoObjetivo = novaWave / len(novosCorredores)
-        # só vou parar quando tiver testado melhor combinação possivel da wave
-        if novoObjetivo >= objetivoAtual or wave < waveMin:
-            melhoresPedidos.append(proximoMelhorPedido)
-            wave = novaWave
-            melhoresCorredores = novosCorredores
-            objetivoAtual = novoObjetivo
-        else:
-            break
-
-    print(f"Wave final: {melhoresPedidos}")
-    print(f"Unidades: {wave}")
-    print(f"Corredores: {melhoresCorredores}")
-    print(f"Objetivo: {objetivoAtual:.2f}")
-    gerarSaida(melhoresPedidos, melhoresCorredores)
