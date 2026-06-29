@@ -1,0 +1,71 @@
+# Otimização de processo - Centro de distribuição
+
+Projeto de otimização de wave-picking em centro de distribuição.
+Implementa 3 abordagens diferentes (dicionário e duas variantes
+com grafo) e compara os resultados.
+
+## Estrutura
+
+```
+projeto/
+├── data/                          # instâncias de entrada (instance_0001.txt, ...)
+├── saidas/                        # resultados gerados pelo programa
+├── main.py                        # ponto de entrada + funções comuns (io, demanda, estoque, grafo, wave)
+└── src/
+    ├── runner.py                  # orquestra as 3 abordagens, mede tempo, valida e roda o loop
+    ├── abordagem_dicionario.py    # abordagem 1 - dicionário puro
+    └── abordagem_grafo.py         # abordagens 2 e 3 - grafo (NetworkX)
+```
+
+## Requisitos
+
+```bash
+pip install networkx
+```
+
+## Como rodar
+
+### Rodar todas as 20 instâncias, todas as 3 abordagens
+
+```bash
+python3 main.py
+```
+
+### Rodar uma instância específica
+
+```bash
+python3 main.py 6
+```
+
+### Rodar várias instâncias específicas
+
+```bash
+python3 main.py 6 7 11 12
+```
+
+Cada execução imprime, por instância e por abordagem: unidades da
+wave, quantidade de corredores, valor objetivo e tempo de execução.
+No final, imprime o tempo total.
+
+
+
+### Validar uma instância + abordagem específica
+
+```bash
+python3 checker.py data/instance_0006.txt saidas/saida_0006_grafo_pedido.txt
+```
+
+
+
+### Validar com o checker
+```bash
+for i in $(seq -f "%04g" 1 20); do
+    for abordagem in dicionario_pedido grafo_pedido grafo_item; do
+        arquivo="saidas/saida_${i}_${abordagem}.txt"
+        if [ -f "$arquivo" ]; then
+            echo -n "Instância $i [$abordagem]: "
+            python3 checker.py "data/instance_$i.txt" "$arquivo"
+        fi
+    done
+done
+```
